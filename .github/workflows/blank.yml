@@ -1,17 +1,17 @@
 name: Fetch and Filter Sources
 
 on:
-  workflow_dispatch:  # You can trigger manually from GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   fetch_sources:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout with PAT
         uses: actions/checkout@v4
         with:
-          persist-credentials: true  # needed for git push
+          token: ${{ secrets.MIHON }}  # ✅ force it to use PAT instead of GITHUB_TOKEN
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -23,35 +23,18 @@ jobs:
 
       - name: Fetch and extract sources
         run: |
-          import json
-          import requests
-
+          import json, requests
           url = "https://raw.githubusercontent.com/keiyoushi/extensions/refs/heads/repo/index.min.json"
-          response = requests.get(url)
-          data = response.json()
-
-          sources_only = []
-          for entry in data:
-              sources = entry.get("sources", [])
-              sources_only.extend(sources)
-
+          data = requests.get(url).json()
+          sources = [src for item in data for src in item.get("sources", [])]
           with open("index.min.json", "w", encoding="utf-8") as f:
-              json.dump(sources_only, f, separators=(",", ":"))
-
+              json.dump(sources, f, separators=(",", ":"))
         shell: python
 
       - name: Commit and push changes
-        env:
-          GH_PAT: ${{ secrets.MIHON }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          echo "Repo: ${{ github.repository }}"
-          git remote -v
-          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}
-          git remote -v
           git add index.min.json
-          git status
           git commit -m "Update index.min.json with only sources [bot]" || echo "No changes to commit"
           git push origin HEAD
-
