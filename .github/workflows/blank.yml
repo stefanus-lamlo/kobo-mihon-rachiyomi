@@ -46,7 +46,12 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          echo "Repo: ${{ github.repository }}"
+          git remote -v
           git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}
+          git remote -v
           git add index.min.json
+          git status
           git commit -m "Update index.min.json with only sources [bot]" || echo "No changes to commit"
-          git push
+          git push origin HEAD
+
