@@ -41,9 +41,12 @@ jobs:
         shell: python
 
       - name: Commit and push changes
+        env:
+          GH_PAT: ${{ secrets.mihon }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}
           git add index.min.json
           git commit -m "Update index.min.json with only sources [bot]" || echo "No changes to commit"
           git push
