@@ -1,0 +1,48 @@
+name: Fetch and Filter Sources
+
+on:
+  workflow_dispatch:  # Run manually from GitHub UI
+
+jobs:
+  fetch_sources:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Fetch and extract sources
+        run: |
+          import json
+          import requests
+
+          # Fetch JSON
+          url = "https://raw.githubusercontent.com/keiyoushi/extensions/refs/heads/repo/index.min.json"
+          response = requests.get(url)
+          data = response.json()
+
+          # Extract all "sources" fields
+          sources_only = []
+          for entry in data:
+              sources = entry.get("sources", [])
+              sources_only.extend(sources)
+
+          # Save to index.min.json
+          with open("index.min.json", "w", encoding="utf-8") as f:
+              json.dump(sources_only, f, separators=(",", ":"))
+
+        shell: python
+
+      - name: Upload output as artifact (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sources-json
+          path: index.min.json
