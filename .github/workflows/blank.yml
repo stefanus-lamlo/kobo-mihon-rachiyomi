@@ -1,7 +1,7 @@
 name: Fetch and Filter Sources
 
 on:
-  workflow_dispatch:  # Run manually from GitHub UI
+  workflow_dispatch:  # You can trigger manually from GitHub Actions tab
 
 jobs:
   fetch_sources:
@@ -10,6 +10,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true  # needed for git push
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,25 +26,24 @@ jobs:
           import json
           import requests
 
-          # Fetch JSON
           url = "https://raw.githubusercontent.com/keiyoushi/extensions/refs/heads/repo/index.min.json"
           response = requests.get(url)
           data = response.json()
 
-          # Extract all "sources" fields
           sources_only = []
           for entry in data:
               sources = entry.get("sources", [])
               sources_only.extend(sources)
 
-          # Save to index.min.json
           with open("index.min.json", "w", encoding="utf-8") as f:
               json.dump(sources_only, f, separators=(",", ":"))
 
         shell: python
 
-      - name: Upload output as artifact (optional)
-        uses: actions/upload-artifact@v4
-        with:
-          name: sources-json
-          path: index.min.json
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.min.json
+          git commit -m "Update index.min.json with only sources [bot]" || echo "No changes to commit"
+          git push
